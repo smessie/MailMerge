@@ -1,12 +1,15 @@
 #!/usr/bin/env ruby
+require 'csv'
+
 # Obtain arguments
 abort 'usage: mailmerge recipients.tsv message.txt [sender@example.com]' unless ARGV.length.between?(2, 3)
-recipientLines = File.read(ARGV[0]).split(/\s*[\r\n]+\s*/)
 messageTemplate = File.read(ARGV[1])
 sender_email = ARGV[2]
 
-# Parse recipients
-recipients = recipientLines.map{|l| l.split "\t"}
+# Parse recipients (TSV, RFC4180-style quoting: quoted fields may contain
+# literal tabs/newlines, and "" inside a quoted field is an escaped quote)
+recipientsRaw = File.read(ARGV[0]).gsub(/\r\n?/, "\n")
+recipients = CSV.parse(recipientsRaw, col_sep: "\t", liberal_parsing: true).reject { |row| row.compact.empty? }
 
 # Create mails
 recipients.each do |recipient|
